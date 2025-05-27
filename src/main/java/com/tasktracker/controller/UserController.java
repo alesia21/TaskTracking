@@ -1,9 +1,11 @@
 package com.tasktracker.controller;
 
+import com.tasktracker.entity.Project;
 import com.tasktracker.entity.User;
 import com.tasktracker.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,32 +13,36 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
-@RequiredArgsConstructor
+
 public class UserController {
 
     private final UserService userService;
 
-    // POST /api/users — Create new user
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
     @PostMapping
-    public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
-        User savedUser = userService.createUser(user);
-        return ResponseEntity.ok(savedUser);
+    public User createUser(@Valid @RequestBody User user) {
+        return userService.createUser(user);
     }
-
-    // GET /api/users/{id} — Get user by ID
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+    @GetMapping("/{id}/projects")
+    public List<Project> getProjectsForUser(@PathVariable Long id) {
         User user = userService.getUserById(id);
-        return ResponseEntity.ok(user);
+        return user.getProjects();
     }
 
+    @GetMapping("/{id}")
+    public User getUser(@PathVariable Long id) {
+        return userService.getUserById(id);
+    }
 
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers(
+    public List<User> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        List<User> users = userService.getAllUsers(page, size);
-        return ResponseEntity.ok(users);
+        return userService.getAllUsers(page, size);
     }
 }

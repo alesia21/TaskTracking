@@ -1,11 +1,13 @@
 package com.tasktracker.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.tasktracker.entity.enums.Priority;
 import com.tasktracker.entity.enums.Status;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.hibernate.validator.internal.constraintvalidators.bv.time.futureorpresent.FutureOrPresentValidatorForYear;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -37,10 +39,12 @@ public class Task {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
+    @JsonBackReference(value="project-task")
     private Project project;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assignee_id")
+    @JsonBackReference(value="user-task")
     private User assignee;
 
     @PrePersist
