@@ -5,6 +5,7 @@ import com.tasktracker.dto.TaskRequest;
 import com.tasktracker.dto.TaskResponse;
 import com.tasktracker.entity.Task;
 import com.tasktracker.entity.enums.TaskStatus;
+import com.tasktracker.repository.TaskRepository;
 import com.tasktracker.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 public class TaskController {
-
+    private final TaskRepository taskRepository;
     private final TaskService taskService;
 
     // 1) POST /api/projects/{projectId}/tasks
@@ -33,8 +34,26 @@ public class TaskController {
         Task t = taskService.createTask(projectId, req);
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(t));
     }
+    @GetMapping("/tasks/status/{status}")
+    public List<TaskResponse> getByStatus(@PathVariable TaskStatus status) {
+        return taskRepository.findAllByStatusJPQL(status).stream()
+                .map(t -> TaskResponse.builder()
+                        .id(t.getId())
+                        .title(t.getTitle())
+                        .description(t.getDescription())
+                        .status(t.getStatus())
+                        .priority(t.getPriority())
+                        .dueDate(t.getDueDate())
+                        .createdAt(t.getCreatedAt())
+                        .projectId(t.getProject().getId())
+                        .projectName(t.getProject().getName())
+                        .assigneeId(t.getAssignee() != null ? t.getAssignee().getId() : null)
+                        .assigneeUsername(t.getAssignee() != null ? t.getAssignee().getUsername() : null)
+                        .build())
+                .collect(Collectors.toList());
+    }
 
-    // 2) GET /api/tasks/{id}
+
     @GetMapping("/tasks/{id}")
     public ResponseEntity<TaskResponse> getTaskById(@PathVariable Long id) {
         return ResponseEntity.ok(toDto(taskService.getTaskById(id)));
@@ -104,5 +123,7 @@ public class TaskController {
                 .assigneeId(t.getAssignee() != null ? t.getAssignee().getId() : null)
                 .assigneeUsername(t.getAssignee() != null ? t.getAssignee().getUsername() : null)
                 .build();
+
+
     }
 }

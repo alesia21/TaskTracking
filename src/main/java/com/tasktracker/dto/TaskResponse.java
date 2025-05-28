@@ -23,10 +23,8 @@ public class TaskResponse {
     private TaskPriority priority;
     private LocalDate dueDate;
     private LocalDateTime createdAt;
-
     private Long projectId;
     private String projectName;
-
     private Long assigneeId;
     private String assigneeUsername;
 }
