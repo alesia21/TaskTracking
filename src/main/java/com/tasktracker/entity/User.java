@@ -2,11 +2,11 @@ package com.tasktracker.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore; //using json ignore to prevent serialization of certain fields in order to avoid infinite loops.
 import jakarta.persistence.*;//jpa annotation for mapping
 import jakarta.validation.constraints.*;//validation api for input constraint
-import lombok.AllArgsConstructor;//lombok annotation to generate constructor with all the fields
-import lombok.Builder;//generating an inner builder class with methods for setting the fields and a build method
+//lombok annotation to generate constructor with all the fields
+//generating an inner builder class with methods for setting the fields and a build method
 //it also adds a method to the class so it can create an instance of the class without calling the constructor
-import lombok.Data;//lombok that generates setters,getters,equals,toString etc.
-import lombok.NoArgsConstructor;//lombok that generates a non argument constructor required by jpa
+import lombok.*;//lombok that generates setters,getters,equals,toString etc.
+//lombok that generates a non argument constructor required by jpa
 
 import java.time.LocalDateTime;
 import java.util.List;

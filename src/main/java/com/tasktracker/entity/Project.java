@@ -1,7 +1,7 @@
 package com.tasktracker.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -12,11 +12,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "projects")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor
 public class Project {
 
     @Id
@@ -31,17 +27,26 @@ public class Project {
 
     private LocalDateTime createdAt;
 
+    // JPA relationship
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    @JsonIgnoreProperties({"projects", "assignedTasks", "hibernateLazyInitializer", "handler", "password"})
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private User owner;
 
 
+    @JsonProperty("ownerId")
+    public Long getOwnerId() {
+        return (owner != null ? owner.getId() : null);
+    }
+
+
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference   // Serializon vetëm listën tasks
     private List<Task> tasks;
+
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now();
     }
+
+
 }

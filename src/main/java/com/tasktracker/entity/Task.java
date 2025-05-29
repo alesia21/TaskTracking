@@ -1,10 +1,9 @@
-// src/main/java/com/tasktracker/entity/Task.java
+// com/tasktracker/entity/Task.java
 package com.tasktracker.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.tasktracker.entity.enums.TaskPriority;
-import com.tasktracker.entity.enums.TaskStatus;
+import com.tasktracker.enums.TaskPriority;
+import com.tasktracker.enums.TaskStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -16,11 +15,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "tasks")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
 public class Task {
 
     @Id
@@ -29,37 +25,31 @@ public class Task {
 
     @NotBlank
     @Size(min = 3, max = 100)
-    @Column(nullable = false, length = 100)
     private String title;
 
-    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @NotNull
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @NotNull
     private TaskStatus status;
 
-    @NotNull
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @NotNull
     private TaskPriority priority;
 
-    @Column(name = "due_date")
     private LocalDate dueDate;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id")
-    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
-    @JsonBackReference      // Nuk serializon fushën project, thyen ciklin
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "project_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer","handler","tasks"})
     private Project project;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer","handler","projects","assignedTasks"})
     private User assignee;
 
     @PrePersist

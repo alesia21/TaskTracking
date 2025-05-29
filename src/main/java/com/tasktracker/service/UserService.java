@@ -1,10 +1,32 @@
 package com.tasktracker.service;
-
 import com.tasktracker.entity.User;
-import java.util.List;
+import com.tasktracker.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-public interface UserService {
-    User createUser(User user);
-    User getUserById(Long id);
-    List<User> getAllUsers(int page, int size);
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+
+    public Optional<User> getUserById(Long id) {
+        return userRepository.findById(id);
+    }
+
+
+    public User saveUser(User user) {
+        return userRepository.save(user);
+    }
+
+
 }

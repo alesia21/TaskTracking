@@ -1,4 +1,3 @@
-// src/main/java/com/tasktracker/exception/ResourceNotFoundException.java
 package com.tasktracker.exception;
 
 import org.springframework.http.HttpStatus;
