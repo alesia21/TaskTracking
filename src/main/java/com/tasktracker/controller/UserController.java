@@ -31,11 +31,10 @@ public class UserController {
         return userService.getUserById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
-    }
 
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User user) {
-        User created = userService.createUser(user);
+        User created = userService.saveUser(user);
         return ResponseEntity.ok(created);
     }
 }
