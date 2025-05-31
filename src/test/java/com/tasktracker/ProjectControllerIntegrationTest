@@ -1,0 +1,67 @@
+package com.tasktracker;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tasktracker.entity.Project;
+import com.tasktracker.entity.User;
+import com.tasktracker.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@Transactional
+class ProjectControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private User owner;
+
+    @BeforeEach
+    void setup() {
+        owner = new User();
+        owner.setUsername("intuser");
+        owner.setEmail("int@ex.com");
+        owner.setPassword("password123");
+        owner.setCreatedAt(LocalDateTime.now());
+        owner = userRepository.save(owner);
+    }
+
+    @Test
+    void whenCreate_thenOk() throws Exception {
+        Project p = new Project();
+        p.setName("New Project");
+        p.setDescription("Desc");
+        p.setOwner(owner);
+
+        mockMvc.perform(post("/api/projects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(p)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").isNumber())
+                .andExpect(jsonPath("$.name").value("New Project"));
+    }
+
+    @Test
+    void whenGetOne_nonExisting_thenNotFound() throws Exception {
+        mockMvc.perform(get("/api/projects/9999"))
+                .andExpect(status().isNotFound());
+    }
+}
