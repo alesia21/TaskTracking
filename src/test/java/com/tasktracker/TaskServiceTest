@@ -1,0 +1,134 @@
+// TaskServiceTest.java
+package com.tasktracker;
+
+import com.tasktracker.entity.Task;
+import com.tasktracker.repository.TaskRepository;
+import com.tasktracker.repository.ProjectRepository;
+import com.tasktracker.repository.UserRepository;
+import com.tasktracker.enums.TaskStatus;
+import com.tasktracker.enums.TaskPriority;
+import com.tasktracker.service.TaskService;
+import jakarta.persistence.EntityNotFoundException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class TaskServiceTest {
+
+    @InjectMocks
+    private TaskService taskService;
+
+    @Mock
+    private TaskRepository taskRepository;
+
+    @Mock
+    private ProjectRepository projectRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Test
+    void whenCreateTask_thenRepositorySaveCalled() {
+        Task input = new Task();
+        when(taskRepository.save(input)).thenReturn(input);
+
+        Task result = taskService.createTask(input);
+
+        assertThat(result).isEqualTo(input);
+        verify(taskRepository).save(input);
+    }
+
+    @Test
+    void whenGetTaskById_existing_thenReturnOptional() {
+        Task t = new Task(); t.setId(1L);
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(t));
+
+        Optional<Task> result = taskService.getTaskById(1L);
+
+        assertThat(result).isPresent().get().isEqualTo(t);
+        verify(taskRepository).findById(1L);
+    }
+
+    @Test
+    void whenGetTasksByProject_withoutStatus_thenCallFindByProjectId() {
+        var page = org.springframework.data.domain.PageRequest.of(0,5);
+        var mockPage = mock(org.springframework.data.domain.Page.class);
+        when(taskRepository.findByProjectId(2L, page)).thenReturn(mockPage);
+
+        taskService.getTasksByProject(2L, null, page);
+        verify(taskRepository).findByProjectId(2L, page);
+    }
+
+    @Test
+    void whenGetTasksByProject_withStatus_thenCallFindByProjectIdAndStatus() {
+        var page = org.springframework.data.domain.PageRequest.of(0,5);
+        var mockPage = mock(org.springframework.data.domain.Page.class);
+        when(taskRepository.findByProjectIdAndStatus(3L, TaskStatus.TODO, page)).thenReturn(mockPage);
+
+        taskService.getTasksByProject(3L, TaskStatus.TODO, page);
+        verify(taskRepository).findByProjectIdAndStatus(3L, TaskStatus.TODO, page);
+    }
+
+    @Test
+    void whenGetTasksDueToday_thenReturnList() {
+        List<Task> due = List.of(new Task(), new Task());
+        when(taskRepository.findByDueDate(LocalDate.now())).thenReturn(due);
+
+        List<Task> result = taskService.getTasksDueToday();
+
+        assertThat(result).hasSize(2);
+        verify(taskRepository).findByDueDate(LocalDate.now());
+    }
+
+    @Test
+    void whenGetTasksByUser_existingUser_thenReturn() {
+        when(userRepository.existsById(5L)).thenReturn(true);
+        List<Task> tasks = List.of(new Task());
+        when(taskRepository.findByAssignee_Id(5L)).thenReturn(tasks);
+
+        List<Task> result = taskService.getTasksByUser(5L);
+
+        assertThat(result).isEqualTo(tasks);
+        verify(userRepository).existsById(5L);
+        verify(taskRepository).findByAssignee_Id(5L);
+    }
+
+    @Test
+    void whenGetTasksByUser_nonExisting_thenThrow() {
+        when(userRepository.existsById(9L)).thenReturn(false);
+        assertThrows(EntityNotFoundException.class, () -> taskService.getTasksByUser(9L));
+    }
+
+    @Test
+    void whenGetFilteredTasks_thenReturnList() {
+        when(userRepository.existsById(7L)).thenReturn(true);
+        List<Task> filtered = List.of(new Task());
+        when(taskRepository.findByAssignee_IdAndStatusAndPriority(7L, TaskStatus.COMPLETED, TaskPriority.LOW))
+                .thenReturn(filtered);
+
+        List<Task> result = taskService.getFilteredTasks(7L, TaskStatus.COMPLETED, TaskPriority.LOW);
+
+        assertThat(result).isEqualTo(filtered);
+        verify(taskRepository).findByAssignee_IdAndStatusAndPriority(7L, TaskStatus.COMPLETED, TaskPriority.LOW);
+    }
+
+    @Test
+    void whenDeleteTask_thenRepositoryDeleteCalled() {
+        taskService.deleteTask(8L);
+        verify(taskRepository).deleteById(8L);
+    }
+}
