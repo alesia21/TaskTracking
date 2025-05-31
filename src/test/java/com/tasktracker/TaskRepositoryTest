@@ -1,0 +1,70 @@
+package com.tasktracker;
+
+import com.tasktracker.entity.Project;
+import com.tasktracker.entity.Task;
+import com.tasktracker.entity.User;
+import com.tasktracker.enums.TaskStatus;
+import com.tasktracker.enums.TaskPriority;
+import com.tasktracker.repository.TaskRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@DataJpaTest
+class TaskRepositoryTest {
+
+    @Autowired
+    private TestEntityManager em;
+
+    @Autowired
+    private TaskRepository taskRepository;
+
+    private User user;
+    private Project project;
+
+    @BeforeEach
+    void setUp() {
+
+        user = new User();
+        user.setUsername("testuser");
+        user.setEmail("test@example.com");
+        user.setPassword("password123");
+        em.persist(user);
+
+
+        project = new Project();
+        project.setName("My Project");
+        project.setDescription("A sample project");
+        project.setOwner(user);
+        em.persist(project);
+    }
+
+    @Test
+    void whenSaveAndFind_thenFound() {
+        // create and persist a valid task
+        Task task = new Task();
+        task.setTitle("My Task");
+        task.setDescription("Some details");
+        task.setDueDate(LocalDate.now().plusDays(1));
+        task.setPriority(TaskPriority.MEDIUM);
+        task.setStatus(TaskStatus.TODO);
+        task.setAssignee(user);
+        task.setProject(project);
+
+        Task saved = taskRepository.save(task);
+        em.flush();
+        em.clear();
+
+        Optional<Task> found = taskRepository.findById(saved.getId());
+        assertThat(found).isPresent();
+        assertThat(found.get().getTitle()).isEqualTo("My Task");
+        assertThat(found.get().getProject().getName()).isEqualTo("My Project");
+    }
+}
