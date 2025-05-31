@@ -1,0 +1,102 @@
+package com.tasktracker;
+
+import com.tasktracker.entity.Project;
+import com.tasktracker.entity.Task;
+import com.tasktracker.entity.User;
+import com.tasktracker.enums.TaskPriority;
+import com.tasktracker.enums.TaskStatus;
+import com.tasktracker.repository.ProjectRepository;
+import com.tasktracker.repository.TaskRepository;
+import com.tasktracker.repository.UserRepository;
+import jakarta.validation.ConstraintViolationException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.*;
+
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = Replace.ANY)
+class ProjectRepositoryTest {
+
+    @Autowired
+    private ProjectRepository projectRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private TaskRepository taskRepository;
+
+    private User owner;
+
+    @BeforeEach
+    void setUpOwner() {
+        owner = new User();
+        owner.setUsername("repoOwner");
+        owner.setEmail("owner@repo.test");
+        owner.setPassword("password123");          // ≥8 chars now
+        owner = userRepository.saveAndFlush(owner);
+    }
+
+    @Test
+    void whenSaveValidProject_thenFoundById() {
+        Project p = new Project();
+        p.setName("Valid Name");
+        p.setDescription("Some description");
+        p.setOwner(owner);
+
+        Project saved = projectRepository.saveAndFlush(p);
+        Optional<Project> fetched = projectRepository.findById(saved.getId());
+
+        assertThat(fetched)
+                .isPresent()
+                .get()
+                .satisfies(proj -> {
+                    assertThat(proj.getName()).isEqualTo("Valid Name");
+                    assertThat(proj.getOwner().getId()).isEqualTo(owner.getId());
+                });
+    }
+
+    @Test
+    void whenSaveNameTooShort_thenConstraintViolation() {
+        Project bad = new Project();
+        bad.setName("No");                     // too short (<3)
+        bad.setDescription("desc");
+        bad.setOwner(owner);
+
+        assertThatThrownBy(() -> projectRepository.saveAndFlush(bad))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("size must be between 3 and 50");
+    }
+
+    @Test
+    void paginationReturnsCorrectPageSizes() {
+        // create 5 projects
+        for (int i = 1; i <= 5; i++) {
+            Project p = new Project();
+            p.setName("Proj " + i);
+            p.setDescription("d" + i);
+            p.setOwner(owner);
+            projectRepository.save(p);
+        }
+        projectRepository.flush();
+
+        Page<Project> page0 = projectRepository.findAll(PageRequest.of(0, 2));
+        Page<Project> page1 = projectRepository.findAll(PageRequest.of(1, 2));
+        Page<Project> page2 = projectRepository.findAll(PageRequest.of(2, 2));
+
+        assertThat(page0.getContent()).hasSize(2);
+        assertThat(page1.getContent()).hasSize(2);
+        assertThat(page2.getContent()).hasSize(1);
+    }
+
+}
