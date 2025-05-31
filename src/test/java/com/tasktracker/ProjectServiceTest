@@ -1,0 +1,96 @@
+// ProjectServiceTest.java
+package com.tasktracker;
+
+import com.tasktracker.entity.Project;
+import com.tasktracker.entity.User;
+import com.tasktracker.repository.ProjectRepository;
+import com.tasktracker.repository.UserRepository;
+import com.tasktracker.service.ProjectService;
+import jakarta.persistence.EntityNotFoundException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class ProjectServiceTest {
+
+    @InjectMocks
+    private ProjectService projectService;
+
+    @Mock
+    private ProjectRepository projectRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void whenCreateProject_withValidOwner_thenSaved() {
+        User owner = new User();
+        owner.setId(1L);
+        owner.setUsername("alice");
+        owner.setEmail("a@ex.com");
+        owner.setPassword("pass");
+        owner.setCreatedAt(LocalDateTime.now());
+
+        Project input = new Project();
+        input.setName("Test");
+        input.setDescription("Desc");
+        input.setOwner(owner);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(owner));
+
+        Project saved = new Project();
+        saved.setId(10L);
+        saved.setName("Test");
+        saved.setDescription("Desc");
+        saved.setOwner(owner);
+        when(projectRepository.save(any(Project.class))).thenReturn(saved);
+
+        Project result = projectService.createProject(input);
+
+        assertThat(result.getId()).isEqualTo(10L);
+        verify(userRepository).findById(1L);
+        verify(projectRepository).save(any(Project.class));
+    }
+
+    @Test
+    void whenGetProject_nonExisting_thenThrow() {
+        when(projectRepository.findById(5L)).thenReturn(Optional.empty());
+        assertThrows(EntityNotFoundException.class, () -> projectService.getProject(5L));
+    }
+
+    @Test
+    void whenListProjects_thenReturnContent() {
+        List<Project> content = List.of(new Project(), new Project());
+        org.springframework.data.domain.Page<Project> mockPage = mock(org.springframework.data.domain.Page.class);
+        when(mockPage.getContent()).thenReturn(content);
+        when(projectRepository.findAll(any(org.springframework.data.domain.Pageable.class))).thenReturn(mockPage);
+
+        List<Project> result = projectService.listProjects(0, 2);
+        assertThat(result).hasSize(2);
+        verify(projectRepository).findAll(any(org.springframework.data.domain.Pageable.class));
+    }
+
+    @Test
+    void whenDeleteProject_nonExisting_thenThrow() {
+        when(projectRepository.existsById(99L)).thenReturn(false);
+        assertThrows(EntityNotFoundException.class, () -> projectService.deleteProject(99L));
+    }
+}
